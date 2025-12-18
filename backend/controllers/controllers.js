@@ -1,8 +1,3 @@
-
-const express = require('express');
-const app = express();
-
-
 // Rendering the main page
 const main = async (request, response) => {
     try {
@@ -26,3 +21,4 @@ const main = async (request, response) => {
 module.exports = {
     main,
 }
+
