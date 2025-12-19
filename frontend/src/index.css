@@ -1,0 +1,27 @@
+@import "tailwindcss";
+
+@layer base {
+  :root {
+    /* Setting a clean, modern color scheme */
+    color-scheme: light;
+  }
+
+  body {
+    margin: 0;
+    padding: 0;
+    @apply bg-slate-50 text-slate-900 antialiased;
+    /* Ensuring the font is professional */
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  }
+}
+
+/* Custom scrollbar for a premium feel */
+::-webkit-scrollbar {
+  width: 6px;
+}
+::-webkit-scrollbar-track {
+  @apply bg-transparent;
+}
+::-webkit-scrollbar-thumb {
+  @apply bg-slate-200 rounded-full hover:bg-slate-300;
+}
