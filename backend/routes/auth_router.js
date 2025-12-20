@@ -1,10 +1,25 @@
 const express = require('express');
 const app = express();
-const Router = express.Router();
-const { register, login } = require('../controllers/auth_controller.js');
+const router = express.Router();
+const { register, login, editUser } = require('../controllers/auth_controller.js');
+const authorization = require('../middelewares/authorization.js');
 
-Router.route('/register').post(register);
-Router.route('/login').post(login);
+// Register user
+// Router.route('/register').post(register);
+
+router.post('/register', register);
+
+// Login user
+// Router.route('/login').post(login);
+router.post('/login', login);
+
+// Edit user
+// router.patch(authorization, editUser);
+router.patch('/update-profile', authorization, editUser)
 
 
-module.exports = Router
+// Edit user
+
+
+
+module.exports = router

@@ -55,7 +55,41 @@ const login = async (request, response) => {
     }
 }
 
+// Editing/updating user
+const editUser = async (request, response) => {
+    const { name, email } = request.body;
+    try {
+        const user = await User.findById(request.user.id);
+        if(!user) {
+            return response.status(404).json({
+                message: "User not found!"
+            });
+        }
+        if(email !== user.email) {
+            const emailExists = await User.findOne({email});
+            if(emailExists) {
+                return response.status(400).json({
+                    message: "This email is already taken by a user!"
+                });
+            }
+        }
+
+        user.name = name;
+        user.email = email;
+        const updateUser = await user.save();
+        return response.status(200).json({
+            message: "User data updated successfuly!",
+        });
+    } catch(error) {
+        console.log("Error", error);
+        return response.status(500).json({
+            message: "Server error"
+        })
+    }
+}
+
 module.exports = {
     register,
     login,
+    editUser,
 }
