@@ -64,13 +64,26 @@ const auth_slice = createSlice({
   },
   extraReducers: (builder) => {
     builder
+      // Register
       .addCase(register_user.fulfilled, (state, action) => {
         state.success_msg = action.payload.message;
+        state.is_loading = false;
+      })
+      // Login
+      .addCase(login_user.pending, (state) => {
+        state.is_loading = true;
+        state.error = null;
       })
       .addCase(login_user.fulfilled, (state, action) => {
+        state.is_loading = false;
         state.token = action.payload.token;
         state.user = action.payload.user;
       })
+      .addCase(login_user.rejected, (state, action) => {
+        state.is_loading = false;
+        state.error = action.payload;
+      })
+      // Profile
       .addCase(get_profile.fulfilled, (state, action) => {
         state.user = action.payload;
         state.is_loading = false;
@@ -82,12 +95,12 @@ const auth_slice = createSlice({
           localStorage.removeItem('user_token');
         }
       })
+      // Update
       .addCase(update_profile.pending, (state) => {
         state.error = null;
         state.success_msg = null;
       })
       .addCase(update_profile.fulfilled, (state, action) => {
-        // Only update if the payload actually contains a user
         if (action.payload?.user) {
           state.user = action.payload.user;
         }

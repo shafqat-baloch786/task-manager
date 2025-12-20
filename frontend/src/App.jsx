@@ -3,6 +3,8 @@ import { useSelector } from 'react-redux';
 import LoginPage from './pages/login_page';
 import SignupPage from './pages/signup_page';
 import DashboardPage from './pages/dashboard_page';
+import ForgotPasswordPage from './pages/forgot_password_page'; // You will create this
+import ResetPasswordPage from './pages/reset_password_page';   // You will create this
 
 function App() {
   const { token } = useSelector((state) => state.auth);
@@ -26,7 +28,19 @@ function App() {
           element={!token ? <SignupPage /> : <Navigate to="/" />} 
         />
 
-        {/* Redirect any other URL (like /dashboard) back to the root / */}
+        {/* FORGOT PASSWORD ROUTE */}
+        <Route 
+          path="/forgot-password" 
+          element={!token ? <ForgotPasswordPage /> : <Navigate to="/" />} 
+        />
+
+        {/* RESET PASSWORD ROUTE (With dynamic token parameter) */}
+        <Route 
+          path="/reset-password/:token" 
+          element={!token ? <ResetPasswordPage /> : <Navigate to="/" />} 
+        />
+
+        {/* Redirect any other URL back to the root / */}
         <Route path="*" element={<Navigate to="/" />} />
       </Routes>
     </Router>
