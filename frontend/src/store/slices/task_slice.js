@@ -48,6 +48,18 @@ export const remove_task = createAsyncThunk('tasks/delete', async (id, thunkAPI)
   }
 });
 
+export const bulk_delete_tasks = createAsyncThunk('tasks/bulkDelete', async (idsArray, thunkAPI) => {
+  const ids = idsArray.join("&");
+  
+  try {
+    await api_client.delete(`/tasks/many/${ids}`);
+    return ids;
+  } catch (error) {
+    return thunkAPI.rejectWithValue(error.response?.data?.message || 'Bulk delete failed');
+  }
+});
+
+
 /**
  * SLICE (State Management)
  */
@@ -99,6 +111,13 @@ const task_slice = createSlice({
       .addCase(remove_task.fulfilled, (state, action) => {
         // Remove the task from the local state list immediately
         state.items = state.items.filter(task => task._id !== action.payload);
+      })
+
+      /** BULK DELETE TASK CASES **/
+      .addCase(bulk_delete_tasks.fulfilled, (state, action) => {
+        // action.payload is the string of IDs separated by '&'
+        const deletedIds = action.payload.split('&');
+        state.items = state.items.filter(task => !deletedIds.includes(task._id));
       });
   },
 });
