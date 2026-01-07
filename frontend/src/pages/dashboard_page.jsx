@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { get_profile, logout_user, update_profile, reset_auth_state } from '../store/slices/auth_slice';
-import { fetch_tasks, add_task, remove_task, update_task, clear_task_error } from '../store/slices/task_slice';
+import { fetch_tasks, add_task, remove_task, update_task, bulk_delete_tasks, clear_task_error } from '../store/slices/task_slice';
 import { 
   LayoutDashboard, LogOut, Plus, User, ClipboardList, 
   CheckCircle2, Clock, Search, Settings, X, Trash2, AlertCircle, Pencil
@@ -17,7 +17,10 @@ const DashboardPage = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [showModal, setShowModal] = useState(false);
   const [showProfileModal, setShowProfileModal] = useState(false);
-  const [editId, setEditId] = useState(null); 
+  const [editId, setEditId] = useState(null);
+  const [selectedTaskIds, setSelectedTaskIds] = useState([]);
+  const [showBulkDeleteModal, setShowBulkDeleteModal] = useState(false);
+  const [bulkDeleteSuccess, setBulkDeleteSuccess] = useState(false);
   const [taskData, setTaskData] = useState({
     title: '', description: '', priority: 'medium', dueDate: '', status: 'pending'
   });
@@ -86,6 +89,46 @@ const DashboardPage = () => {
     dispatch(update_task({ id: task._id, updates: { status: newStatus } }));
   };
 
+  // Toggle individual task selection
+  const toggleTaskSelection = (taskId) => {
+    setSelectedTaskIds(prev =>
+      prev.includes(taskId) ? prev.filter(id => id !== taskId) : [...prev, taskId]
+    );
+  };
+
+  // Show delete confirmation modal
+  const handleBulkDelete = () => {
+    if (selectedTaskIds.length === 0) return;
+    setShowBulkDeleteModal(true);
+  };
+
+  // Execute the bulk delete
+  const confirmBulkDelete = () => {
+    dispatch(bulk_delete_tasks(selectedTaskIds)).then((res) => {
+      if (!res.error) {
+        setSelectedTaskIds([]);
+        setShowBulkDeleteModal(false);
+        // Show success notification
+        setBulkDeleteSuccess(true);
+        setTimeout(() => setBulkDeleteSuccess(false), 3000);
+      }
+    });
+  };
+
+  // Toggle select/deselect all filtered tasks
+  const toggleSelectAll = () => {
+    const filteredTaskIds = filteredTasks.map(task => task._id);
+    const allSelected = filteredTaskIds.every(id => selectedTaskIds.includes(id));
+    
+    if (allSelected) {
+      setSelectedTaskIds(selectedTaskIds.filter(id => !filteredTaskIds.includes(id)));
+    } else {
+      const newSelected = new Set(selectedTaskIds);
+      filteredTaskIds.forEach(id => newSelected.add(id));
+      setSelectedTaskIds(Array.from(newSelected));
+    }
+  };
+
   // Only show loading screen if we have no user AND we are actually loading from server
   if (!user && is_loading) {
     return (
@@ -152,6 +195,41 @@ const DashboardPage = () => {
               <input type="text" placeholder="Search tasks..." className="w-full pl-16 pr-8 py-6 bg-white border border-slate-200 rounded-[32px] outline-none focus:ring-8 focus:ring-indigo-500/5 focus:border-indigo-500 transition-all shadow-sm font-medium text-slate-700" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
             </div>
 
+            {/* Success notification after bulk delete */}
+            {bulkDeleteSuccess && (
+              <div className="mb-8 p-5 bg-emerald-50 border border-emerald-200 text-emerald-700 rounded-[24px] flex items-center gap-3 animate-in slide-in-from-top-4 duration-300">
+                <CheckCircle2 size={22} strokeWidth={2.5} />
+                <p className="font-black text-sm">Tasks deleted successfully!</p>
+              </div>
+            )}
+
+            {selectedTaskIds.length > 0 && (
+              <div className="mb-8 p-6 bg-indigo-50 border border-indigo-200 rounded-[32px] flex items-center justify-between">
+                <div className="flex items-center gap-4">
+                  {/* Select All checkbox */}
+                  <input
+                    type="checkbox"
+                    checked={filteredTasks.length > 0 && filteredTasks.every(task => selectedTaskIds.includes(task._id))}
+                    onChange={toggleSelectAll}
+                    className="w-5 h-5 cursor-pointer"
+                    title="Select all displayed tasks"
+                  />
+                  <p className="text-indigo-700 font-bold text-lg">
+                    {selectedTaskIds.length === filteredTasks.length && filteredTasks.length > 0
+                      ? `All ${selectedTaskIds.length} task(s) selected`
+                      : `${selectedTaskIds.length} task(s) selected`}
+                  </p>
+                </div>
+                {/* Delete Selected button - triggers confirmation modal */}
+                <button 
+                  onClick={handleBulkDelete}
+                  className="flex items-center gap-2 bg-rose-600 text-white px-8 py-3 rounded-[24px] font-black hover:bg-rose-700 transition-all active:scale-95"
+                >
+                  <Trash2 size={18} /> Delete Selected
+                </button>
+              </div>
+            )}
+
             {is_loading && items.length === 0 ? (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
                   {[1,2,3].map(i => <div key={i} className="h-64 bg-white border border-slate-100 rounded-[40px] animate-pulse"></div>)}
@@ -159,7 +237,16 @@ const DashboardPage = () => {
             ) : filteredTasks.length > 0 ? (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
                 {filteredTasks.map((task) => (
-                  <div key={task._id} className="bg-white p-8 rounded-[40px] border border-slate-100 shadow-sm hover:shadow-2xl transition-all relative group border-b-8 border-b-transparent hover:border-b-indigo-500">
+                  <div key={task._id} className={`bg-white p-8 rounded-[40px] border-2 shadow-sm hover:shadow-2xl transition-all relative group border-b-8 ${selectedTaskIds.includes(task._id) ? 'border-indigo-500 border-b-indigo-500' : 'border-slate-100 border-b-transparent hover:border-b-indigo-500'}`}>
+                    {/* Checkbox to select task */}
+                    <div className="absolute top-6 left-6">
+                      <input
+                        type="checkbox"
+                        checked={selectedTaskIds.includes(task._id)}
+                        onChange={() => toggleTaskSelection(task._id)}
+                        className="w-5 h-5 cursor-pointer"
+                      />
+                    </div>
                     <div className="absolute top-6 right-6 flex gap-2 opacity-0 group-hover:opacity-100 transition-all translate-y-2 group-hover:translate-y-0">
                       <button onClick={() => openEditModal(task)} className="p-2.5 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-2xl transition-all shadow-sm bg-white border border-slate-50"><Pencil size={18} /></button>
                       <button onClick={() => dispatch(remove_task(task._id))} className="p-2.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-2xl transition-all shadow-sm bg-white border border-slate-50"><Trash2 size={18} /></button>
@@ -279,6 +366,39 @@ const DashboardPage = () => {
               >
                 Save Changes
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* BULK DELETE CONFIRMATION MODAL */}
+      {showBulkDeleteModal && (
+        <div className="fixed inset-0 bg-slate-900/70 backdrop-blur-xl z-[70] flex items-center justify-center p-6">
+          <div className="bg-white w-full max-w-md rounded-[48px] shadow-2xl animate-in zoom-in-95 duration-300">
+            <div className="p-10 border-b border-slate-100 flex justify-between items-center bg-rose-50/50">
+              <h2 className="text-3xl font-black text-slate-800 tracking-tight">Delete Tasks?</h2>
+              <button onClick={() => setShowBulkDeleteModal(false)} className="p-4 hover:bg-white rounded-[24px] text-slate-300 hover:text-rose-500 transition-all active:scale-90"><X size={28} strokeWidth={3} /></button>
+            </div>
+            <div className="p-10 space-y-8">
+              {/* Display count of tasks to be deleted */}
+              <p className="text-slate-600 font-bold text-lg">
+                Are you sure you want to delete {selectedTaskIds.length} task(s)? This action cannot be undone.
+              </p>
+              {/* Cancel and Confirm buttons */}
+              <div className="flex gap-4">
+                <button
+                  onClick={() => setShowBulkDeleteModal(false)}
+                  className="flex-1 bg-slate-200 text-slate-700 py-4 rounded-[24px] font-black hover:bg-slate-300 transition-all active:scale-95"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={confirmBulkDelete}
+                  className="flex-1 bg-rose-600 text-white py-4 rounded-[24px] font-black hover:bg-rose-700 transition-all shadow-2xl active:scale-95"
+                >
+                  Delete
+                </button>
+              </div>
             </div>
           </div>
         </div>

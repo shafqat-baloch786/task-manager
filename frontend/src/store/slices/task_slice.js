@@ -48,6 +48,20 @@ export const remove_task = createAsyncThunk('tasks/delete', async (id, thunkAPI)
   }
 });
 
+// Bulk delete tasks - send array of IDs to backend
+/**
+ * Deletes multiple tasks at once
+ * Returns the IDs so we can remove them from local state
+ */
+export const bulk_delete_tasks = createAsyncThunk('tasks/bulkDelete', async (taskIds, thunkAPI) => {
+  try {
+    const response = await api_client.delete('/tasks/bulk-delete', { data: { taskIds } });
+    return taskIds;
+  } catch (error) {
+    return thunkAPI.rejectWithValue(error.response?.data?.message || 'Bulk delete failed');
+  }
+});
+
 /**
  * SLICE (State Management)
  */
@@ -99,6 +113,15 @@ const task_slice = createSlice({
       .addCase(remove_task.fulfilled, (state, action) => {
         // Remove the task from the local state list immediately
         state.items = state.items.filter(task => task._id !== action.payload);
+      })
+
+      /** BULK DELETE TASK CASES **/
+      .addCase(bulk_delete_tasks.fulfilled, (state, action) => {
+        // Remove deleted tasks from the list
+        state.items = state.items.filter(task => !action.payload.includes(task._id));
+      })
+      .addCase(bulk_delete_tasks.rejected, (state, action) => {
+        state.error = action.payload;
       });
   },
 });

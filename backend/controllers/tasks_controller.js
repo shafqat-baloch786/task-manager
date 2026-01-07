@@ -117,6 +117,52 @@ const deleteTask = async (request, response) => {
     }
 }
 
+
+// Delete multiple tasks at once
+const bulkDeleteTasks = async (request, response) => {
+    try {
+        const { taskIds } = request.body;
+
+        // Make sure we get valid task IDs
+        if (!taskIds || !Array.isArray(taskIds) || taskIds.length === 0) {
+            return response.status(400).json({
+                message: "no task IDs provided for deletion!"
+            });
+        }
+
+        // Check all IDs are valid MongoDB ObjectIds
+        const invalidIds = taskIds.filter(id => !mongoose.Types.ObjectId.isValid(id));
+        if (invalidIds.length > 0) {
+            return response.status(400).json({
+                message: "One or more task IDs are invalid!",
+                invalidIds
+            });
+        }
+
+        // Delete only user's own tasks (authorization check)
+        const result = await Tasks.deleteMany({
+            _id: { $in: taskIds },
+            user: request.user.id
+        });
+
+        if (result.deletedCount === 0) {
+            return response.status(404).json({
+                message: "No tasks found to delete!"
+            });
+        }
+
+        return response.status(200).json({
+            message: `${result.deletedCount} task(s) deleted successfully`,
+            deletedCount: result.deletedCount
+        });
+    } catch (error) {
+        console.log("Error in bulk deleting tasks!", error);
+        return response.status(500).json({
+            message: "Error in bulk deleting tasks!"
+        })
+    }
+}
+
 // Editing/updating a task
 const editTask = async (request, response) => {
     try {
@@ -184,5 +230,6 @@ module.exports = {
     tasks,
     viewTask,
     deleteTask,
+    bulkDeleteTasks,
     editTask,
 }
