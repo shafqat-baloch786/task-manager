@@ -117,6 +117,42 @@ const deleteTask = async (request, response) => {
     }
 }
 
+const bulkDeleteTasks = async (request, response) => {
+    try {
+        const { ids } = await request.params; // EachTask is separated by '&'
+
+        // Filter valid ids only.
+        const idsArray = ids.split('&').filter(id => id.match(/^[0-9a-fA-F]{24}$/));
+
+        if (idsArray.length === 0) {
+            return response.status(400).json({
+                message: "Invalid task IDs!"
+            });
+        }
+
+        const tasks = await Tasks.deleteMany({
+            _id: { $in: idsArray },
+            user: request.user.id
+        });
+
+        if (tasks.deletedCount === 0) {
+            return response.status(404).json({
+                message: "No tasks found to delete!"
+            });
+        }
+
+        return response.status(200).json({
+            message: "Tasks deleted successfully!"
+        });
+    } catch (error) {
+        console.log("Error in bulk deleting the tasks!", error);
+        return response.status(500).json({
+            message: "Error in bulk deleting the tasks!"
+        })
+    }
+
+}
+
 // Editing/updating a task
 const editTask = async (request, response) => {
     try {
@@ -184,5 +220,6 @@ module.exports = {
     tasks,
     viewTask,
     deleteTask,
+    bulkDeleteTasks,
     editTask,
 }

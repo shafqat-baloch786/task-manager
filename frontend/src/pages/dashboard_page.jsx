@@ -1,9 +1,9 @@
 import { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { get_profile, logout_user, update_profile, reset_auth_state } from '../store/slices/auth_slice';
-import { fetch_tasks, add_task, remove_task, update_task, clear_task_error } from '../store/slices/task_slice';
-import { 
-  LayoutDashboard, LogOut, Plus, User, ClipboardList, 
+import { fetch_tasks, add_task, remove_task, update_task, clear_task_error, bulk_delete_tasks } from '../store/slices/task_slice';
+import {
+  LayoutDashboard, LogOut, Plus, User, ClipboardList,
   CheckCircle2, Clock, Search, Settings, X, Trash2, AlertCircle, Pencil
 } from 'lucide-react';
 import ProfileView from '../components/profile_view';
@@ -12,16 +12,17 @@ const DashboardPage = () => {
   const dispatch = useDispatch();
   const { user, token, error: authError, success_msg } = useSelector((state) => state.auth);
   const { items, is_loading, error: taskError } = useSelector((state) => state.tasks);
-  
+
   const [activeTab, setActiveTab] = useState('dashboard');
   const [searchTerm, setSearchTerm] = useState('');
   const [showModal, setShowModal] = useState(false);
   const [showProfileModal, setShowProfileModal] = useState(false);
-  const [editId, setEditId] = useState(null); 
+  const [editId, setEditId] = useState(null);
   const [taskData, setTaskData] = useState({
     title: '', description: '', priority: 'medium', dueDate: '', status: 'pending'
   });
   const [profileData, setProfileData] = useState({ name: '', email: '' });
+  const [selectedTasks, setSelectedTasks] = useState([]);
 
   useEffect(() => {
     if (token) {
@@ -50,6 +51,33 @@ const DashboardPage = () => {
     setTaskData({ title: '', description: '', priority: 'medium', dueDate: '', status: 'pending' });
   };
 
+  const handleTaskSelectChange = (taskId) => {
+    if (selectedTasks.includes(taskId)) {
+      setSelectedTasks(selectedTasks.filter(id => id !== taskId));
+    } else {
+      setSelectedTasks([...selectedTasks, taskId]);
+    }
+  };
+
+  const handleSelectAllChnage = () => {
+    if (selectedTasks.length === items.length) {
+      setSelectedTasks([]);
+    } else {
+      setSelectedTasks(items.map(task => task._id));
+    }
+  }
+
+  const handleBulkDelete = () => {
+    if (selectedTasks.length === 0) return;
+
+    dispatch(bulk_delete_tasks(selectedTasks)).then((res) => {
+      if (!res.error) {
+        setSelectedTasks([]);
+      }
+    });
+  };
+
+
   const handleSubmit = (e) => {
     e.preventDefault();
     if (editId) {
@@ -66,7 +94,7 @@ const DashboardPage = () => {
   const handleProfileSubmit = async (e) => {
     if (e) e.preventDefault();
     const result = await dispatch(update_profile(profileData));
-    
+
     if (update_profile.fulfilled.match(result)) {
       setTimeout(() => {
         setShowProfileModal(false);
@@ -152,15 +180,30 @@ const DashboardPage = () => {
               <input type="text" placeholder="Search tasks..." className="w-full pl-16 pr-8 py-6 bg-white border border-slate-200 rounded-[32px] outline-none focus:ring-8 focus:ring-indigo-500/5 focus:border-indigo-500 transition-all shadow-sm font-medium text-slate-700" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
             </div>
 
+            <div className="text-slate-700 bg-white flex items-center gap-5 py-4 px-6 mb-12 rounded-4xl border border-slate-200 shadow-sm w-fit">
+              <label>
+                <input type="checkbox" className="peer hidden" onChange={handleSelectAllChnage} checked={filteredTasks.length === selectedTasks.length} />
+                <div className='w-4 h-4 rounded-md ring-2 ring-offset-2 ring-slate-300 peer-hover:ring-indigo-600 peer-checked:bg-indigo-600 peer-checked:ring-indigo-600' />
+              </label>
+              <span>{filteredTasks.length === selectedTasks.length ? "All Tasks" : selectedTasks.length > 1 ? selectedTasks.length + " Tasks" : selectedTasks.length + " Task"} Selected</span>
+
+              <button className="p-2.5 text-slate-400 hover:text-rose-600 transition-colors" onClick={handleBulkDelete}><Trash2 size={20} /></button>
+            </div>
+
             {is_loading && items.length === 0 ? (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-                  {[1,2,3].map(i => <div key={i} className="h-64 bg-white border border-slate-100 rounded-[40px] animate-pulse"></div>)}
+                {[1, 2, 3].map(i => <div key={i} className="h-64 bg-white border border-slate-100 rounded-[40px] animate-pulse"></div>)}
               </div>
             ) : filteredTasks.length > 0 ? (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
                 {filteredTasks.map((task) => (
-                  <div key={task._id} className="bg-white p-8 rounded-[40px] border border-slate-100 shadow-sm hover:shadow-2xl transition-all relative group border-b-8 border-b-transparent hover:border-b-indigo-500">
+                  <div key={task._id} className="bg-white p-8 rounded-[40px] border border-slate-100 shadow-sm hover:shadow-2xl transition-all relative group border-b-8 border-b-transparent hover:border-b-indigo-500 has-checked:border-indigo-500">
                     <div className="absolute top-6 right-6 flex gap-2 opacity-0 group-hover:opacity-100 transition-all translate-y-2 group-hover:translate-y-0">
+                      {/* Select Button */}
+                      <label className="p-2.5 rounded-2xl transition-all shadow-sm bg-white border border-slate-50 hover:bg-indigo-50">
+                        <input type="checkbox" className="peer hidden" onChange={() => handleTaskSelectChange(task._id)} checked={selectedTasks.includes(task._id)} />
+                        <div className='w-4.5 h-4.5 rounded-md ring-2 ring-offset-3 ring-slate-400 peer-hover:ring-indigo-600 peer-checked:bg-indigo-600 peer-checked:ring-indigo-600' />
+                      </label>
                       <button onClick={() => openEditModal(task)} className="p-2.5 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-2xl transition-all shadow-sm bg-white border border-slate-50"><Pencil size={18} /></button>
                       <button onClick={() => dispatch(remove_task(task._id))} className="p-2.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-2xl transition-all shadow-sm bg-white border border-slate-50"><Trash2 size={18} /></button>
                     </div>
@@ -207,16 +250,16 @@ const DashboardPage = () => {
               )}
               <div className="space-y-3">
                 <label className="text-xs font-black text-slate-400 uppercase tracking-[0.2em] ml-2">Task Title</label>
-                <input required placeholder="What needs to be done?" className="w-full p-5 bg-slate-50 border border-slate-100 rounded-[24px] focus:ring-8 focus:ring-indigo-500/5 focus:border-indigo-500 outline-none transition-all font-bold text-slate-800 text-lg" type="text" value={taskData.title} onChange={e => setTaskData({...taskData, title: e.target.value})} />
+                <input required placeholder="What needs to be done?" className="w-full p-5 bg-slate-50 border border-slate-100 rounded-[24px] focus:ring-8 focus:ring-indigo-500/5 focus:border-indigo-500 outline-none transition-all font-bold text-slate-800 text-lg" type="text" value={taskData.title} onChange={e => setTaskData({ ...taskData, title: e.target.value })} />
               </div>
               <div className="space-y-3">
                 <label className="text-xs font-black text-slate-400 uppercase tracking-[0.2em] ml-2">Description</label>
-                <textarea placeholder="Add details..." className="w-full p-5 bg-slate-50 border border-slate-100 rounded-[24px] focus:ring-8 focus:ring-indigo-500/5 focus:border-indigo-500 outline-none h-36 font-medium text-slate-700 resize-none" value={taskData.description} onChange={e => setTaskData({...taskData, description: e.target.value})} />
+                <textarea placeholder="Add details..." className="w-full p-5 bg-slate-50 border border-slate-100 rounded-[24px] focus:ring-8 focus:ring-indigo-500/5 focus:border-indigo-500 outline-none h-36 font-medium text-slate-700 resize-none" value={taskData.description} onChange={e => setTaskData({ ...taskData, description: e.target.value })} />
               </div>
               <div className="grid grid-cols-2 gap-8">
                 <div className="space-y-3">
                   <label className="text-xs font-black text-slate-400 uppercase tracking-[0.2em] ml-2">Priority</label>
-                  <select className="w-full p-5 bg-slate-50 border border-slate-100 rounded-[24px] outline-none font-bold text-slate-700 appearance-none" value={taskData.priority} onChange={e => setTaskData({...taskData, priority: e.target.value})}>
+                  <select className="w-full p-5 bg-slate-50 border border-slate-100 rounded-[24px] outline-none font-bold text-slate-700 appearance-none" value={taskData.priority} onChange={e => setTaskData({ ...taskData, priority: e.target.value })}>
                     <option value="low">Low</option>
                     <option value="medium">Medium</option>
                     <option value="high">High</option>
@@ -224,7 +267,7 @@ const DashboardPage = () => {
                 </div>
                 <div className="space-y-3">
                   <label className="text-xs font-black text-slate-400 uppercase tracking-[0.2em] ml-2">Deadline</label>
-                  <input className="w-full p-5 bg-slate-50 border border-slate-100 rounded-[24px] outline-none font-bold text-slate-700" type="date" value={taskData.dueDate} onChange={e => setTaskData({...taskData, dueDate: e.target.value})} />
+                  <input className="w-full p-5 bg-slate-50 border border-slate-100 rounded-[24px] outline-none font-bold text-slate-700" type="date" value={taskData.dueDate} onChange={e => setTaskData({ ...taskData, dueDate: e.target.value })} />
                 </div>
               </div>
               <button type="submit" className="w-full bg-indigo-600 text-white py-6 rounded-[32px] font-black hover:bg-indigo-700 transition-all shadow-2xl active:scale-[0.98] text-xl mt-4">
@@ -243,14 +286,14 @@ const DashboardPage = () => {
               <h2 className="text-3xl font-black text-slate-800 tracking-tight">Edit Account</h2>
               <button onClick={() => setShowProfileModal(false)} className="p-4 hover:bg-white rounded-[24px] text-slate-300 hover:text-rose-500 transition-all active:scale-90"><X size={28} strokeWidth={3} /></button>
             </div>
-            
+
             {/* CHANGED FROM <form> TO <div> TO PREVENT ANY POSSIBLE RELOAD */}
             <div className="p-10 space-y-8">
-              
+
               {/* SUCCESS MESSAGE */}
               {success_msg && (
                 <div className="flex items-center gap-3 p-5 bg-emerald-50 border border-emerald-100 text-emerald-600 rounded-[24px] animate-in slide-in-from-top-4 duration-300">
-                  <CheckCircle2 size={22} strokeWidth={3} /> 
+                  <CheckCircle2 size={22} strokeWidth={3} />
                   <p className="font-black text-sm tracking-tight">{success_msg}</p>
                 </div>
               )}
@@ -264,16 +307,16 @@ const DashboardPage = () => {
 
               <div className="space-y-3">
                 <label className="text-xs font-black text-slate-400 uppercase tracking-[0.2em] ml-2">Full Name</label>
-                <input required className="w-full p-5 bg-slate-50 border border-slate-100 rounded-[24px] focus:ring-8 focus:ring-indigo-500/5 focus:border-indigo-500 outline-none transition-all font-bold text-slate-800 text-lg" type="text" value={profileData.name} onChange={e => setProfileData({...profileData, name: e.target.value})} />
+                <input required className="w-full p-5 bg-slate-50 border border-slate-100 rounded-[24px] focus:ring-8 focus:ring-indigo-500/5 focus:border-indigo-500 outline-none transition-all font-bold text-slate-800 text-lg" type="text" value={profileData.name} onChange={e => setProfileData({ ...profileData, name: e.target.value })} />
               </div>
 
               <div className="space-y-3">
                 <label className="text-xs font-black text-slate-400 uppercase tracking-[0.2em] ml-2">Email Address</label>
-                <input required className="w-full p-5 bg-slate-50 border border-slate-100 rounded-[24px] focus:ring-8 focus:ring-indigo-500/5 focus:border-indigo-500 outline-none transition-all font-bold text-slate-800 text-lg" type="email" value={profileData.email} onChange={e => setProfileData({...profileData, email: e.target.value})} />
+                <input required className="w-full p-5 bg-slate-50 border border-slate-100 rounded-[24px] focus:ring-8 focus:ring-indigo-500/5 focus:border-indigo-500 outline-none transition-all font-bold text-slate-800 text-lg" type="email" value={profileData.email} onChange={e => setProfileData({ ...profileData, email: e.target.value })} />
               </div>
 
-              <button 
-                type="button" 
+              <button
+                type="button"
                 onClick={handleProfileSubmit}
                 className="w-full bg-slate-900 text-white py-6 rounded-[32px] font-black hover:bg-indigo-600 transition-all shadow-2xl active:scale-[0.98] text-xl mt-4"
               >
