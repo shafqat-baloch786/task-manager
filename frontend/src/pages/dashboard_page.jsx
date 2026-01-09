@@ -23,6 +23,9 @@ const DashboardPage = () => {
   });
   const [profileData, setProfileData] = useState({ name: '', email: '' });
   const [selectedTasks, setSelectedTasks] = useState([]);
+  //ahme
+  const [activeTaskId, setActiveTaskId] = useState(null);
+
 
   useEffect(() => {
     if (token) {
@@ -196,10 +199,11 @@ const DashboardPage = () => {
               </div>
             ) : filteredTasks.length > 0 ? (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-                {filteredTasks.map((task) => (
-                  <div key={task._id} className="bg-white p-8 rounded-[40px] border border-slate-100 shadow-sm hover:shadow-2xl transition-all relative group border-b-8 border-b-transparent hover:border-b-indigo-500 has-checked:border-indigo-500">
-                    <div className="absolute top-6 right-6 flex gap-2 opacity-0 group-hover:opacity-100 transition-all translate-y-2 group-hover:translate-y-0">
-                      {/* Select Button */}
+           {/*Adding toggle for div on mobile touch */} {filteredTasks.map((task) => (
+          <div key={task._id}   onClick={() => setActiveTaskId(activeTaskId === task._id ? null : task._id)} className="bg-white p-8 rounded-[40px] border border-slate-100 shadow-sm hover:shadow-2xl transition-all relative group border-b-8 border-b-transparent hover:border-b-indigo-500 has-checked:border-indigo-500">
+                {/*New style for shifting div upright  added by ahme*/} 
+      <div onClick={(e) => e.stopPropagation()} className={`absolute -top-4 left-1/2 -translate-x-1/2 z-10 flex gap-2 transition-all ${ activeTaskId === task._id? 'opacity-100 translate-y-1 pointer-events-auto': 'opacity-0 translate-y-0 pointer-events-none'} md:pointer-events-auto md:opacity-0 md:group-hover:opacity-100 md:group-hover:translate-y-1`}>
+                    {/* Select Button */}
                       <label className="p-2.5 rounded-2xl transition-all shadow-sm bg-white border border-slate-50 hover:bg-indigo-50">
                         <input type="checkbox" className="peer hidden" onChange={() => handleTaskSelectChange(task._id)} checked={selectedTasks.includes(task._id)} />
                         <div className='w-4.5 h-4.5 rounded-md ring-2 ring-offset-3 ring-slate-400 peer-hover:ring-indigo-600 peer-checked:bg-indigo-600 peer-checked:ring-indigo-600' />
@@ -209,7 +213,7 @@ const DashboardPage = () => {
                     </div>
                     <div className="flex justify-between items-center mb-8">
                       <span className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-[0.15em] ${task.priority === 'high' ? 'bg-rose-50 text-rose-600' : 'bg-amber-50 text-amber-600'}`}>{task.priority}</span>
-                      <button onClick={() => toggleStatus(task)} className="transition-all active:scale-75">
+                     <button onClick={() => toggleStatus(task)} className="transition-all active:scale-75">
                         {task.status === 'completed' ? <CheckCircle2 className="text-emerald-500" size={28} strokeWidth={2.5} /> : <Clock className="text-slate-300 hover:text-indigo-500" size={28} strokeWidth={2.5} />}
                       </button>
                     </div>
