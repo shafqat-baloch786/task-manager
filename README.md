@@ -88,6 +88,10 @@ Create a `.env` file in the `backend` folder:
 PORT=4000
 MONGO_URI=your_mongodb_connection_string
 JWT_SECRET=your_secret_key
+
+# Email configuration (for Nodemailer)
+EMAIL_USER=your_email
+EMAIL_PASS=gmail_app_password
 ```
 
 > **Important:** Do not commit your `.env` file to GitHub. Use `.env.example` for reference.
