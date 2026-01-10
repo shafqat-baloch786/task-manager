@@ -38,7 +38,17 @@ export const update_task = createAsyncThunk('tasks/update', async ({ id, updates
   }
 });
 
-// 4. Delete Task (Matches router.delete('/:id') and controller deleteTask)
+// 4. Toggle Task (Matches router.patch('/:id/complete') and controller toggleTask)
+export const toggle_task = createAsyncThunk('tasks/toggle', async (id, thunkAPI) => {
+  try {
+    await api_client.patch(`/tasks/${id}/complete`);
+    return id;
+  } catch (error) {
+    return thunkAPI.rejectWithValue(error.response?.data?.message || 'Toggle failed');
+  }
+})
+
+// 5. Delete Task (Matches router.delete('/:id') and controller deleteTask)
 export const remove_task = createAsyncThunk('tasks/delete', async (id, thunkAPI) => {
   try {
     await api_client.delete(`/tasks/${id}`);
@@ -48,6 +58,7 @@ export const remove_task = createAsyncThunk('tasks/delete', async (id, thunkAPI)
   }
 });
 
+// 6. Delete Bulk of Tasks (Matches router.delete('/many/:ids') and controller bulkDeleteTasks)
 export const bulk_delete_tasks = createAsyncThunk('tasks/bulkDelete', async (idsArray, thunkAPI) => {
   const ids = idsArray.join("&");
   
@@ -104,6 +115,14 @@ const task_slice = createSlice({
         const index = state.items.findIndex(task => task._id === action.payload._id);
         if (index !== -1) {
           state.items[index] = action.payload;
+        }
+      })
+
+      /** TOGGLE TASK CASES **/
+      .addCase(toggle_task.fulfilled, (state, action) => {
+        const index = state.items.findIndex(task => task._id === action.payload);
+        if (index !== -1) {
+          state.items[index].isCompleted = !state.items[index].isCompleted;
         }
       })
 

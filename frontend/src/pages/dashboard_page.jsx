@@ -1,12 +1,14 @@
 import { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { get_profile, logout_user, update_profile, reset_auth_state } from '../store/slices/auth_slice';
-import { fetch_tasks, add_task, remove_task, update_task, clear_task_error, bulk_delete_tasks } from '../store/slices/task_slice';
+import { fetch_tasks, add_task, update_task, clear_task_error, bulk_delete_tasks } from '../store/slices/task_slice';
 import {
-  LayoutDashboard, LogOut, Plus, User, ClipboardList,
-  CheckCircle2, Clock, Search, Settings, X, Trash2, AlertCircle, Pencil
+  LayoutDashboard, LogOut, User, ClipboardList,
+  CheckCircle2, Settings, X, AlertCircle
 } from 'lucide-react';
 import ProfileView from '../components/profile_view';
+import CompletedView from '../components/views/completed_view';
+import DashboardView from '../components/views/dashboard_view';
 
 const DashboardPage = () => {
   const dispatch = useDispatch();
@@ -23,7 +25,6 @@ const DashboardPage = () => {
   });
   const [profileData, setProfileData] = useState({ name: '', email: '' });
   const [selectedTasks, setSelectedTasks] = useState([]);
-  //ahme
   const [activeTaskId, setActiveTaskId] = useState(null);
 
 
@@ -33,6 +34,11 @@ const DashboardPage = () => {
       dispatch(fetch_tasks());
     }
   }, [dispatch, token]);
+
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setSelectedTasks([]);
+  }, [activeTab])
 
   const openEditModal = (task) => {
     dispatch(clear_task_error());
@@ -53,22 +59,6 @@ const DashboardPage = () => {
     setEditId(null);
     setTaskData({ title: '', description: '', priority: 'medium', dueDate: '', status: 'pending' });
   };
-
-  const handleTaskSelectChange = (taskId) => {
-    if (selectedTasks.includes(taskId)) {
-      setSelectedTasks(selectedTasks.filter(id => id !== taskId));
-    } else {
-      setSelectedTasks([...selectedTasks, taskId]);
-    }
-  };
-
-  const handleSelectAllChnage = () => {
-    if (selectedTasks.length === items.length) {
-      setSelectedTasks([]);
-    } else {
-      setSelectedTasks(items.map(task => task._id));
-    }
-  }
 
   const handleBulkDelete = () => {
     if (selectedTasks.length === 0) return;
@@ -112,11 +102,6 @@ const DashboardPage = () => {
     setShowProfileModal(true);
   };
 
-  const toggleStatus = (task) => {
-    const newStatus = task.status === 'completed' ? 'pending' : 'completed';
-    dispatch(update_task({ id: task._id, updates: { status: newStatus } }));
-  };
-
   // Only show loading screen if we have no user AND we are actually loading from server
   if (!user && is_loading) {
     return (
@@ -149,6 +134,9 @@ const DashboardPage = () => {
             <button onClick={() => setActiveTab('dashboard')} className={`w-full flex items-center gap-3 px-4 py-3.5 rounded-2xl font-black transition-all ${activeTab === 'dashboard' ? 'bg-indigo-50 text-indigo-700' : 'text-slate-400 hover:bg-slate-50 hover:text-slate-600'}`}>
               <LayoutDashboard size={20} /> Dashboard
             </button>
+            <button onClick={() => setActiveTab('completed')} className={`w-full flex items-center gap-3 px-4 py-3.5 rounded-2xl font-black transition-all ${activeTab === 'completed' ? 'bg-indigo-50 text-indigo-700' : 'text-slate-400 hover:bg-slate-50 hover:text-slate-600'}`}>
+              <CheckCircle2 size={20} /> Completed
+            </button>
             <button onClick={() => setActiveTab('profile')} className={`w-full flex items-center gap-3 px-4 py-3.5 rounded-2xl font-black transition-all ${activeTab === 'profile' ? 'bg-indigo-50 text-indigo-700' : 'text-slate-400 hover:bg-slate-50 hover:text-slate-600'}`}>
               <User size={20} /> My Profile
             </button>
@@ -167,75 +155,15 @@ const DashboardPage = () => {
       {/* MAIN CONTENT */}
       <main className="flex-1 ml-64 p-12">
         {activeTab === 'dashboard' ? (
-          <div className="max-w-6xl mx-auto">
-            <header className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-12">
-              <div>
-                <h1 className="text-5xl font-black text-slate-900 tracking-tight leading-none mb-3">Hello, {user.name.split(' ')[0]}!</h1>
-                <p className="text-slate-500 text-lg font-medium">{items.length > 0 ? `Focus on your ${items.length} active tasks today.` : "Your workspace is ready for new ideas."}</p>
-              </div>
-              <button onClick={() => { dispatch(clear_task_error()); setShowModal(true); }} className="flex items-center gap-3 bg-indigo-600 text-white px-10 py-5 rounded-[24px] font-black hover:bg-indigo-700 shadow-2xl shadow-indigo-200 transition-all hover:-translate-y-1 active:scale-95">
-                <Plus size={22} strokeWidth={3} /> New Task
-              </button>
-            </header>
-
-            <div className="relative mb-12 group">
-              <Search className="absolute left-6 top-1/2 -translate-y-1/2 text-slate-300 group-focus-within:text-indigo-600 transition-colors" size={22} />
-              <input type="text" placeholder="Search tasks..." className="w-full pl-16 pr-8 py-6 bg-white border border-slate-200 rounded-[32px] outline-none focus:ring-8 focus:ring-indigo-500/5 focus:border-indigo-500 transition-all shadow-sm font-medium text-slate-700" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
-            </div>
-
-            <div className="text-slate-700 bg-white flex items-center gap-5 py-4 px-6 mb-12 rounded-4xl border border-slate-200 shadow-sm w-fit">
-              <label>
-                <input type="checkbox" className="peer hidden" onChange={handleSelectAllChnage} checked={filteredTasks.length === selectedTasks.length} />
-                <div className='w-4 h-4 rounded-md ring-2 ring-offset-2 ring-slate-300 peer-hover:ring-indigo-600 peer-checked:bg-indigo-600 peer-checked:ring-indigo-600' />
-              </label>
-              <span>{filteredTasks.length === selectedTasks.length ? "All Tasks" : selectedTasks.length > 1 ? selectedTasks.length + " Tasks" : selectedTasks.length + " Task"} Selected</span>
-
-              <button className="p-2.5 text-slate-400 hover:text-rose-600 transition-colors" onClick={handleBulkDelete}><Trash2 size={20} /></button>
-            </div>
-
-            {is_loading && items.length === 0 ? (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-                {[1, 2, 3].map(i => <div key={i} className="h-64 bg-white border border-slate-100 rounded-[40px] animate-pulse"></div>)}
-              </div>
-            ) : filteredTasks.length > 0 ? (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-           {/*Adding toggle for div on mobile touch */} {filteredTasks.map((task) => (
-          <div key={task._id}   onClick={() => setActiveTaskId(activeTaskId === task._id ? null : task._id)} className="bg-white p-8 rounded-[40px] border border-slate-100 shadow-sm hover:shadow-2xl transition-all relative group border-b-8 border-b-transparent hover:border-b-indigo-500 has-checked:border-indigo-500">
-                {/*New style for shifting div upright  added by ahme*/} 
-      <div onClick={(e) => e.stopPropagation()} className={`absolute -top-4 left-1/2 -translate-x-1/2 z-10 flex gap-2 transition-all ${ activeTaskId === task._id? 'opacity-100 translate-y-1 pointer-events-auto': 'opacity-0 translate-y-0 pointer-events-none'} md:pointer-events-auto md:opacity-0 md:group-hover:opacity-100 md:group-hover:translate-y-1`}>
-                    {/* Select Button */}
-                      <label className="p-2.5 rounded-2xl transition-all shadow-sm bg-white border border-slate-50 hover:bg-indigo-50">
-                        <input type="checkbox" className="peer hidden" onChange={() => handleTaskSelectChange(task._id)} checked={selectedTasks.includes(task._id)} />
-                        <div className='w-4.5 h-4.5 rounded-md ring-2 ring-offset-3 ring-slate-400 peer-hover:ring-indigo-600 peer-checked:bg-indigo-600 peer-checked:ring-indigo-600' />
-                      </label>
-                      <button onClick={() => openEditModal(task)} className="p-2.5 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-2xl transition-all shadow-sm bg-white border border-slate-50"><Pencil size={18} /></button>
-                      <button onClick={() => dispatch(remove_task(task._id))} className="p-2.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-2xl transition-all shadow-sm bg-white border border-slate-50"><Trash2 size={18} /></button>
-                    </div>
-                    <div className="flex justify-between items-center mb-8">
-                      <span className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-[0.15em] ${task.priority === 'high' ? 'bg-rose-50 text-rose-600' : 'bg-amber-50 text-amber-600'}`}>{task.priority}</span>
-                     <button onClick={() => toggleStatus(task)} className="transition-all active:scale-75">
-                        {task.status === 'completed' ? <CheckCircle2 className="text-emerald-500" size={28} strokeWidth={2.5} /> : <Clock className="text-slate-300 hover:text-indigo-500" size={28} strokeWidth={2.5} />}
-                      </button>
-                    </div>
-                    <h3 className={`text-2xl font-black mb-3 leading-tight ${task.status === 'completed' ? 'line-through text-slate-300' : 'text-slate-800'}`}>{task.title}</h3>
-                    <p className="text-slate-500 text-sm leading-relaxed mb-8 line-clamp-3 font-medium">{task.description || "No additional notes for this task."}</p>
-                    <div className="flex items-center gap-2 text-[11px] font-black text-slate-400 bg-slate-50 w-fit px-4 py-2 rounded-xl border border-slate-100/50 uppercase tracking-wider">
-                      <AlertCircle size={14} strokeWidth={3} /> {task.dueDate ? new Date(task.dueDate).toLocaleDateString() : 'No Deadline'}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <div className="flex flex-col items-center justify-center py-32 bg-white rounded-[60px] border-4 border-dashed border-slate-100 text-center px-8 shadow-inner">
-                <div className="bg-indigo-50 p-10 rounded-full mb-10 shadow-xl shadow-indigo-100/50"><ClipboardList className="text-indigo-600" size={80} strokeWidth={1.5} /></div>
-                <h2 className="text-4xl font-black text-slate-800 mb-4 tracking-tight">Your board is clear.</h2>
-                <button onClick={() => { dispatch(clear_task_error()); setShowModal(true); }} className="bg-indigo-600 text-white px-12 py-5 rounded-[28px] font-black hover:bg-indigo-700 shadow-2xl transition-all">Create First Task</button>
-              </div>
+          <DashboardView user={user} is_loading={is_loading} items={items} searchTerm={searchTerm} setSearchTerm={setSearchTerm} setShowModal={setShowModal} selectedTasks={selectedTasks} setSelectedTasks={setSelectedTasks} handleBulkDelete={handleBulkDelete} openEditModal={openEditModal} activeTaskId={activeTaskId} setActiveTaskId={setActiveTaskId} filteredTasks={filteredTasks} />
+        ) :
+          activeTab === 'completed' ? (
+            <CompletedView user={user} setActiveTab={setActiveTab} is_loading={is_loading} searchTerm={searchTerm} setSearchTerm={setSearchTerm} setShowModal={setShowModal} selectedTasks={selectedTasks} setSelectedTasks={setSelectedTasks} handleBulkDelete={handleBulkDelete} activeTaskId={activeTaskId} setActiveTaskId={setActiveTaskId} filteredTasks={filteredTasks.filter(t => t.isCompleted) || []} />
+          )
+            :
+            (
+              <ProfileView user={user} taskCount={items.length} onEditClick={openProfileEdit} />
             )}
-          </div>
-        ) : (
-          <ProfileView user={user} taskCount={items.length} onEditClick={openProfileEdit} />
-        )}
       </main>
 
       {/* TASK MODAL */}
