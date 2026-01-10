@@ -7,7 +7,6 @@ import {
   CheckCircle2, Settings, X, AlertCircle
 } from 'lucide-react';
 import ProfileView from '../components/profile_view';
-import CompletedView from '../components/views/completed_view';
 import DashboardView from '../components/views/dashboard_view';
 
 const DashboardPage = () => {
@@ -26,6 +25,7 @@ const DashboardPage = () => {
   const [profileData, setProfileData] = useState({ name: '', email: '' });
   const [selectedTasks, setSelectedTasks] = useState([]);
   const [activeTaskId, setActiveTaskId] = useState(null);
+  const [isCompletedOnly, setIsCompletedOnly] = useState(true);
 
 
   useEffect(() => {
@@ -117,7 +117,7 @@ const DashboardPage = () => {
   // Safety check to ensure we don't map over empty items
   if (!user) return null;
 
-  const filteredTasks = items?.filter(t => t.title.toLowerCase().includes(searchTerm.toLowerCase())) || [];
+  const filteredTasks = items?.filter(t => t.title.toLowerCase().includes(searchTerm.toLowerCase()) && (isCompletedOnly ? t.isCompleted : true)) || [];
 
   return (
     <div className="flex min-h-screen bg-slate-50">
@@ -133,9 +133,6 @@ const DashboardPage = () => {
           <nav className="space-y-2">
             <button onClick={() => setActiveTab('dashboard')} className={`w-full flex items-center gap-3 px-4 py-3.5 rounded-2xl font-black transition-all ${activeTab === 'dashboard' ? 'bg-indigo-50 text-indigo-700' : 'text-slate-400 hover:bg-slate-50 hover:text-slate-600'}`}>
               <LayoutDashboard size={20} /> Dashboard
-            </button>
-            <button onClick={() => setActiveTab('completed')} className={`w-full flex items-center gap-3 px-4 py-3.5 rounded-2xl font-black transition-all ${activeTab === 'completed' ? 'bg-indigo-50 text-indigo-700' : 'text-slate-400 hover:bg-slate-50 hover:text-slate-600'}`}>
-              <CheckCircle2 size={20} /> Completed
             </button>
             <button onClick={() => setActiveTab('profile')} className={`w-full flex items-center gap-3 px-4 py-3.5 rounded-2xl font-black transition-all ${activeTab === 'profile' ? 'bg-indigo-50 text-indigo-700' : 'text-slate-400 hover:bg-slate-50 hover:text-slate-600'}`}>
               <User size={20} /> My Profile
@@ -155,15 +152,11 @@ const DashboardPage = () => {
       {/* MAIN CONTENT */}
       <main className="flex-1 ml-64 p-12">
         {activeTab === 'dashboard' ? (
-          <DashboardView user={user} is_loading={is_loading} items={items} searchTerm={searchTerm} setSearchTerm={setSearchTerm} setShowModal={setShowModal} selectedTasks={selectedTasks} setSelectedTasks={setSelectedTasks} handleBulkDelete={handleBulkDelete} openEditModal={openEditModal} activeTaskId={activeTaskId} setActiveTaskId={setActiveTaskId} filteredTasks={filteredTasks} />
+          <DashboardView user={user} is_loading={is_loading} setIsCompletedOnly={setIsCompletedOnly} isCompletedOnly={isCompletedOnly} items={items} searchTerm={searchTerm} setSearchTerm={setSearchTerm} setShowModal={setShowModal} selectedTasks={selectedTasks} setSelectedTasks={setSelectedTasks} handleBulkDelete={handleBulkDelete} openEditModal={openEditModal} activeTaskId={activeTaskId} setActiveTaskId={setActiveTaskId} filteredTasks={filteredTasks} />
         ) :
-          activeTab === 'completed' ? (
-            <CompletedView user={user} setActiveTab={setActiveTab} is_loading={is_loading} searchTerm={searchTerm} setSearchTerm={setSearchTerm} setShowModal={setShowModal} selectedTasks={selectedTasks} setSelectedTasks={setSelectedTasks} handleBulkDelete={handleBulkDelete} activeTaskId={activeTaskId} setActiveTaskId={setActiveTaskId} filteredTasks={filteredTasks.filter(t => t.isCompleted) || []} />
-          )
-            :
-            (
-              <ProfileView user={user} taskCount={items.length} onEditClick={openProfileEdit} />
-            )}
+          (
+            <ProfileView user={user} taskCount={items.length} onEditClick={openProfileEdit} />
+          )}
       </main>
 
       {/* TASK MODAL */}
