@@ -1,4 +1,4 @@
-import { Trash2, Pencil, CheckCircle2, AlertCircle, Clock } from 'lucide-react';
+import { Trash2, Pencil, CheckCircle2, AlertCircle, Clock, CircleDashed } from 'lucide-react';
 import { useDispatch } from 'react-redux';
 import { remove_task, toggle_task } from '../store/slices/task_slice';
 
@@ -35,12 +35,13 @@ export const TaskCard = ({ task, openEditModal, setActiveTaskId, activeTaskId, s
     <div onClick={() => setActiveTaskId(activeTaskId === task._id ? null : task._id)} className="bg-white p-8 rounded-[40px] border border-slate-100 shadow-sm hover:shadow-2xl transition-all relative group border-b-8 border-b-transparent hover:border-b-indigo-500 has-checked:border-indigo-500">
       <div onClick={(e) => e.stopPropagation()} className={`absolute -top-4 left-1/2 -translate-x-1/2 z-10 flex gap-2 transition-all ${activeTaskId === task._id ? 'opacity-100 translate-y-1 pointer-events-auto' : 'opacity-0 translate-y-0 pointer-events-none'} md:pointer-events-auto md:opacity-0 md:group-hover:opacity-100 md:group-hover:translate-y-1`}>
         {/* Select Button */}
-        <label className="p-2.5 rounded-2xl transition-all shadow-sm bg-white border border-slate-50 hover:bg-indigo-50">
+        <label title="Select task" className="p-2.5 rounded-2xl transition-all shadow-sm bg-white border border-slate-50 hover:bg-indigo-50">
           <input type="checkbox" className="peer hidden" onChange={handleTaskSelectChange} checked={selectedTasks.includes(task._id)} />
-          <div className='w-4.5 h-4.5 rounded-md ring-2 ring-offset-3 ring-slate-400 peer-hover:ring-indigo-600 peer-checked:bg-indigo-600 peer-checked:ring-indigo-600' />
+          <div className='w-4.5 h-4.5 rounded-md ring-2 ring-offset-1 ring-slate-400 peer-hover:ring-indigo-600 peer-checked:bg-indigo-600 peer-checked:ring-indigo-600' />
         </label>
-        <button onClick={handleOpenEditModal} className="p-2.5 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-2xl transition-all shadow-sm bg-white border border-slate-50"><Pencil size={18} /></button>
-        <button onClick={handleDelete} className="p-2.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-2xl transition-all shadow-sm bg-white border border-slate-50"><Trash2 size={18} /></button>
+        <button title={task.isCompleted ? "Mark as Incomplete" : "Mark as Complete"} onClick={handleToggleCompleted} className="p-2 text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-2xl transition-all shadow-sm bg-white border border-slate-50" >{task.isCompleted ? <CheckCircle2 className="text-emerald-500" size={22} /> : <CircleDashed size={22} />}</button>
+        <button title="Edit task" onClick={handleOpenEditModal} className="p-2.5 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-2xl transition-all shadow-sm bg-white border border-slate-50"><Pencil size={18} /></button>
+        <button title="Delete task" onClick={handleDelete} className="p-2.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-2xl transition-all shadow-sm bg-white border border-slate-50"><Trash2 size={18} /></button>
       </div>
       <div className="flex justify-between items-center mb-8">
         <span className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-[0.15em] ${priorityColors[task.priority]}`}>{task.priority}</span>
