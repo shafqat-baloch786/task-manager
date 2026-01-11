@@ -215,6 +215,95 @@ const editTask = async (request, response) => {
     }
 }
 
+//completing task
+const completeTask = async (request, response) => {
+    try {
+        const { id } = request.params;
+        if (!mongoose.Types.ObjectId.isValid(id)) {
+            return response.status(401).json({
+                message: "Task id is invalid!"
+            });
+        }
+        const task = await Tasks.findOneAndUpdate(
+            {
+                _id: id,
+                user: request.user.id,
+            },
+            {
+                $set: { isCompleted: true },
+            },
+            {
+                new: true,
+                runValidators: true,
+            }
+        );
+
+        if (!task) {
+            return response.status(404).json({
+                message: "Task not found!"
+            });
+        }
+        return response.status(200).json({
+            task,
+            message: "Task marked as completed!"
+        });
+    } catch (error) {
+        console.log("Error in completing the task!", error);
+        return response.status(500).json({
+            message: "Server error!"
+        });
+    }
+}
+
+const getCompletedTasks = async (request, response) => {
+    try {
+        const completedTasks = await Tasks.find({
+            user: request.user.id,
+            isCompleted: true
+        }).sort({ createdAt: -1 });
+        return response.status(200).json({
+            completedTasks,
+            message: "Completed tasks fetched successfully!"
+        });
+    } catch (error) {
+        console.log("Error in fetching completed tasks!", error);
+        return response.status(500).json({
+            message: "Server error!"
+        });
+    }
+}
+
+const uncompleteTask = async (request, response) => {
+    try {
+        const { id } = request.params;
+
+        const task = await Tasks.findOneAndUpdate(
+            {
+                _id: id,
+                user: request.user.id,
+            },
+            {
+                $set: { isCompleted: false },
+            },
+            {new: true}
+        );
+
+        if (!task) {    
+            return response.status(404).json({
+                message: "Task not found!"
+            });
+        }
+        response.status(200).json({
+            task,
+            message: "Task marked as uncompleted!"
+        });
+    } catch (error) {
+        response.status(500).json({
+            message: "Server error!"
+        });
+    }
+}
+
 module.exports = {
     create_task,
     tasks,
@@ -222,4 +311,7 @@ module.exports = {
     deleteTask,
     bulkDeleteTasks,
     editTask,
+    completeTask,
+    getCompletedTasks,
+    uncompleteTask
 }

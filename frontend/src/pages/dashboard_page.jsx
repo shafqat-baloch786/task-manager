@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { get_profile, logout_user, update_profile, reset_auth_state } from '../store/slices/auth_slice';
-import { fetch_tasks, add_task, remove_task, update_task, clear_task_error, bulk_delete_tasks } from '../store/slices/task_slice';
+import { fetch_tasks, add_task, remove_task, update_task, clear_task_error, bulk_delete_tasks, fetch_completed_tasks, complete_task,uncomplete_task} from '../store/slices/task_slice';
 import {
   LayoutDashboard, LogOut, Plus, User, ClipboardList,
   CheckCircle2, Clock, Search, Settings, X, Trash2, AlertCircle, Pencil
@@ -16,6 +16,7 @@ const DashboardPage = () => {
   const [activeTab, setActiveTab] = useState('dashboard');
   const [searchTerm, setSearchTerm] = useState('');
   const [showModal, setShowModal] = useState(false);
+  const [showCompleted, setShowCompleted] = useState(false);
   const [showProfileModal, setShowProfileModal] = useState(false);
   const [editId, setEditId] = useState(null);
   const [taskData, setTaskData] = useState({
@@ -109,10 +110,11 @@ const DashboardPage = () => {
     setShowProfileModal(true);
   };
 
-  const toggleStatus = (task) => {
+ /* const toggleStatus = (task) => {
     const newStatus = task.status === 'completed' ? 'pending' : 'completed';
     dispatch(update_task({ id: task._id, updates: { status: newStatus } }));
   };
+*/
 
   // Only show loading screen if we have no user AND we are actually loading from server
   if (!user && is_loading) {
@@ -170,10 +172,25 @@ const DashboardPage = () => {
                 <h1 className="text-5xl font-black text-slate-900 tracking-tight leading-none mb-3">Hello, {user.name.split(' ')[0]}!</h1>
                 <p className="text-slate-500 text-lg font-medium">{items.length > 0 ? `Focus on your ${items.length} active tasks today.` : "Your workspace is ready for new ideas."}</p>
               </div>
+              <div className="flex flex-col gap-4">
               <button onClick={() => { dispatch(clear_task_error()); setShowModal(true); }} className="flex items-center gap-3 bg-indigo-600 text-white px-10 py-5 rounded-[24px] font-black hover:bg-indigo-700 shadow-2xl shadow-indigo-200 transition-all hover:-translate-y-1 active:scale-95">
                 <Plus size={22} strokeWidth={3} /> New Task
               </button>
-            </header>
+              
+
+              <button onClick={() => {
+                if(showCompleted){
+                  dispatch(fetch_tasks());
+                } else{
+                  dispatch(fetch_completed_tasks());
+                }
+                setShowCompleted(!showCompleted);
+              }} className="flex items-center gap-3 border border-slate-300 px-8 py-5 rounded-3xl font-black hover:bg-slate-100 transition-all">
+                {showCompleted ? 'Active Tasks' : 'View Completed Tasks'}
+              </button>
+              </div>
+              </header>
+            
 
             <div className="relative mb-12 group">
               <Search className="absolute left-6 top-1/2 -translate-y-1/2 text-slate-300 group-focus-within:text-indigo-600 transition-colors" size={22} />
@@ -198,7 +215,45 @@ const DashboardPage = () => {
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
                 {filteredTasks.map((task) => (
                   <div key={task._id} className="bg-white p-8 rounded-[40px] border border-slate-100 shadow-sm hover:shadow-2xl transition-all relative group border-b-8 border-b-transparent hover:border-b-indigo-500 has-checked:border-indigo-500">
-                    <div className="absolute top-6 right-6 flex gap-2 opacity-0 group-hover:opacity-100 transition-all translate-y-2 group-hover:translate-y-0">
+                    <div className="absolute top-6 right-6 flex gap-2 opacity-0 group-hover:opacity-100 transition-all translate-y-2 group-hover:translate-y-0 pointer-events-none group-hover:pointer-events-auto">
+                      <label
+  className="p-2.5 rounded-2xl bg-white border border-slate-50 shadow-sm cursor-pointer relative z-20"
+  onClick={(e) => e.stopPropagation()}
+>
+  <input
+    type="checkbox"
+    checked={task.isCompleted}
+    onChange={() =>
+      task.isCompleted
+        ? dispatch(uncomplete_task(task._id))
+        : dispatch(complete_task(task._id))
+    }
+    className="hidden peer"
+  />
+
+  <div className="
+    w-4.5 h-4.5 rounded-md
+    ring-2 ring-offset-2
+    ring-slate-400
+    peer-checked:bg-emerald-500
+    peer-checked:ring-emerald-500
+    flex items-center justify-center
+    transition-all
+  ">
+    {task.isCompleted && (
+      <svg
+        className="w-3 h-3 text-white"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="3"
+        viewBox="0 0 24 24"
+      >
+        <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+      </svg>
+    )}
+  </div>
+</label>
+
                       {/* Select Button */}
                       <label className="p-2.5 rounded-2xl transition-all shadow-sm bg-white border border-slate-50 hover:bg-indigo-50">
                         <input type="checkbox" className="peer hidden" onChange={() => handleTaskSelectChange(task._id)} checked={selectedTasks.includes(task._id)} />
@@ -209,11 +264,9 @@ const DashboardPage = () => {
                     </div>
                     <div className="flex justify-between items-center mb-8">
                       <span className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-[0.15em] ${task.priority === 'high' ? 'bg-rose-50 text-rose-600' : 'bg-amber-50 text-amber-600'}`}>{task.priority}</span>
-                      <button onClick={() => toggleStatus(task)} className="transition-all active:scale-75">
-                        {task.status === 'completed' ? <CheckCircle2 className="text-emerald-500" size={28} strokeWidth={2.5} /> : <Clock className="text-slate-300 hover:text-indigo-500" size={28} strokeWidth={2.5} />}
-                      </button>
+                   
                     </div>
-                    <h3 className={`text-2xl font-black mb-3 leading-tight ${task.status === 'completed' ? 'line-through text-slate-300' : 'text-slate-800'}`}>{task.title}</h3>
+                    <h3 className={`text-2xl font-black mb-3 leading-tight ${task.isCompleted ? 'line-through text-slate-300' : 'text-slate-800'}`}>{task.title}</h3>
                     <p className="text-slate-500 text-sm leading-relaxed mb-8 line-clamp-3 font-medium">{task.description || "No additional notes for this task."}</p>
                     <div className="flex items-center gap-2 text-[11px] font-black text-slate-400 bg-slate-50 w-fit px-4 py-2 rounded-xl border border-slate-100/50 uppercase tracking-wider">
                       <AlertCircle size={14} strokeWidth={3} /> {task.dueDate ? new Date(task.dueDate).toLocaleDateString() : 'No Deadline'}
