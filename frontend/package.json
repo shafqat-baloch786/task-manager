@@ -10,6 +10,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "22": "^0.0.0",
     "@reduxjs/toolkit": "^2.11.2",
     "@tailwindcss/vite": "^4.1.18",
     "axios": "^1.13.2",

@@ -59,6 +59,32 @@ export const bulk_delete_tasks = createAsyncThunk('tasks/bulkDelete', async (ids
   }
 });
 
+export const complete_task = createAsyncThunk('tasks/complete', async (id, thunkAPI) => {
+  try {
+    const response = await api_client.patch(`/tasks/${id}/complete`);
+    return response.data.task;
+  } catch (error) {
+    return thunkAPI.rejectWithValue(error.response?.data?.message || 'Mark as complete failed');
+  }
+});
+
+export const fetch_completed_tasks = createAsyncThunk('tasks/fetchCompleted', async (_, thunkAPI) => {
+  try {
+    const response = await api_client.get('/tasks/completed');
+    return response.data.completedTasks;
+  } catch (error) {
+    return thunkAPI.rejectWithValue(error.response?.data?.message || 'Failed to load completed tasks');
+  }
+});
+
+export const uncomplete_task = createAsyncThunk('tasks/uncomplete', async (id, thunkAPI) => {
+  try {
+    const response = await api_client.patch(`/tasks/${id}/uncomplete`);
+    return response.data.task;
+  } catch (error) {
+    return thunkAPI.rejectWithValue(error.response?.data?.message || 'Mark as uncomplete failed');
+  }
+});
 
 /**
  * SLICE (State Management)
@@ -118,9 +144,36 @@ const task_slice = createSlice({
         // action.payload is the string of IDs separated by '&'
         const deletedIds = action.payload.split('&');
         state.items = state.items.filter(task => !deletedIds.includes(task._id));
+      })
+      /** COMPLETE TASK CASES **/
+      .addCase(complete_task.fulfilled, (state, action) => {
+        const index = state.items.findIndex(task => task._id === action.payload._id);
+        if (index !== -1) {
+          state.items[index] = action.payload;
+        }
+      })
+      /** FETCH COMPLETED TASKS CASES **/
+      .addCase(fetch_completed_tasks.pending, (state) => {
+        state.is_loading = true;  
+      })
+      .addCase(fetch_completed_tasks.fulfilled, (state, action) => {
+        state.is_loading = false;
+        state.items = action.payload;
+      })
+        .addCase(fetch_completed_tasks.rejected, (state, action) => {
+          state.is_loading = false;
+          state.error = action.payload;
+        })
+
+      /** UNCOMPLETE TASK CASES **/
+      .addCase(uncomplete_task.fulfilled, (state, action) => {
+        const index = state.items.findIndex(task => task._id === action.payload._id);
+        if (index !== -1) {
+          state.items[index] = action.payload;
+        }
       });
-  },
-});
+  }
+  });
 
 export const { clear_task_error } = task_slice.actions;
 export default task_slice.reducer;
