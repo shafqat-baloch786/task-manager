@@ -34,6 +34,10 @@ const taskSchema = new mongoose.Schema(
             required: true,
 
         },
+        isCompleted: {
+            type: Boolean,
+            default: false,
+        }
     },
     // Adding timestamp automatically
     { timestamps: true }

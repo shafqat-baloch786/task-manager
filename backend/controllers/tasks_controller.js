@@ -49,6 +49,22 @@ const tasks = async (request, response) => {
     }
 }
 
+const completedTasks = async (request, response) => {
+    try {
+        const getTasks = await Tasks.find({ user: request.user.id, isCompleted: true }).sort({ createdAt: -1 });
+
+        response.status(200).json({
+            getTasks,
+            message: "All tasks!"
+        })
+    } catch (error) {
+        console.log("Error in tasks!", error);
+        return response.json(500).json({
+            message: "Server error!"
+        })
+    }
+}
+
 
 // View single task
 const viewTask = async (request, response) => {
@@ -215,11 +231,45 @@ const editTask = async (request, response) => {
     }
 }
 
+const toggleComplete = async (request, response) => {
+    try {
+        const { id } = request.params;
+
+        if (id.match(/^[0-9a-fA-F]{24}$/)) {
+            const task = await Tasks.findOne({
+                _id: id,
+                user: request.user.id,
+            });
+            if (!task) {
+                return response.status(404).json({
+                    message: "Task not found!"
+                })
+            };
+
+            task.isCompleted = !task.isCompleted || false;
+            await task.save();
+            return response.status(200).json({
+                message: "Task toggled!"
+            })
+        }
+        return response.status(400).json({
+            message: "Invalid task ID!"
+        });
+    } catch (error) {
+        console.log("Error in toggling task!", error);
+        return response.status(500).json({
+            message: "Error in toggling task!"
+        })
+    }
+}
+
 module.exports = {
     create_task,
     tasks,
+    completedTasks,
     viewTask,
     deleteTask,
     bulkDeleteTasks,
     editTask,
+    toggleComplete,
 }
