@@ -1,15 +1,18 @@
 import { useState } from "react";
-import ProfileView from "../components/profile_view";
+import ProfileView from "../components/profileView";
 import { useDispatch, useSelector } from "react-redux";
-import { reset_auth_state, update_profile } from "../store/slices/auth_slice";
+import { resetAuthState, updateProfile } from "../store/slices/authSlice";
+import { X, CheckCircle2, AlertCircle } from "lucide-react";
 
 function ProfilePage() {
   const dispatch = useDispatch();
+
   const {
     user,
     error: authError,
-    success_msg,
+    successMessage,
   } = useSelector((state) => state.auth);
+
   const { items } = useSelector((state) => state.tasks);
 
   const [profileData, setProfileData] = useState({ name: "", email: "" });
@@ -17,18 +20,19 @@ function ProfilePage() {
 
   const handleProfileSubmit = async (e) => {
     if (e) e.preventDefault();
-    const result = await dispatch(update_profile(profileData));
 
-    if (update_profile.fulfilled.match(result)) {
+    const result = await dispatch(updateProfile(profileData));
+
+    if (updateProfile.fulfilled.match(result)) {
       setTimeout(() => {
         setShowProfileModal(false);
-        dispatch(reset_auth_state());
+        dispatch(resetAuthState());
       }, 2500);
     }
   };
 
   const openProfileEdit = () => {
-    dispatch(reset_auth_state());
+    dispatch(resetAuthState());
     setProfileData({ name: user.name, email: user.email });
     setShowProfileModal(true);
   };
@@ -44,6 +48,7 @@ function ProfilePage() {
           onEditClick={openProfileEdit}
         />
       </main>
+
       {/* PROFILE MODAL */}
       {showProfileModal && (
         <div className="fixed inset-0 bg-slate-900/70 backdrop-blur-xl z-[60] flex items-center justify-center p-6">
@@ -60,14 +65,13 @@ function ProfilePage() {
               </button>
             </div>
 
-            {/* CHANGED FROM <form> TO <div> TO PREVENT ANY POSSIBLE RELOAD */}
             <div className="p-10 space-y-8">
               {/* SUCCESS MESSAGE */}
-              {success_msg && (
+              {successMessage && (
                 <div className="flex items-center gap-3 p-5 bg-emerald-50 border border-emerald-100 text-emerald-600 rounded-[24px] animate-in slide-in-from-top-4 duration-300">
                   <CheckCircle2 size={22} strokeWidth={3} />
                   <p className="font-black text-sm tracking-tight">
-                    {success_msg}
+                    {successMessage}
                   </p>
                 </div>
               )}
@@ -75,7 +79,7 @@ function ProfilePage() {
               {/* ERROR MESSAGE */}
               {authError && (
                 <div className="flex items-center gap-3 p-4 bg-rose-50 border border-rose-100 text-rose-600 rounded-2xl">
-                  <AlertCircle size={20} />{" "}
+                  <AlertCircle size={20} />
                   <p className="text-sm font-bold">{authError}</p>
                 </div>
               )}

@@ -1,5 +1,5 @@
 import { useDispatch } from 'react-redux';
-import { logout_user } from '../../store/slices/auth_slice';
+import { logout_user } from '../../store/slices/authSlice';
 import { LayoutDashboard, LogOut, ClipboardList, User, Settings } from 'lucide-react';
 import { NavLink } from 'react-router-dom';
 

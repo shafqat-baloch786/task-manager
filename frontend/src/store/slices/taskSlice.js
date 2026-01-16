@@ -1,5 +1,5 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
-import api_client from '../../services/api_client';
+import api_client from '../../services/apiClient';
 
 /**
  * THUNKS (Async Logic for Backend operations)

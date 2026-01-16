@@ -1,7 +1,7 @@
 const express = require('express');
 const app = express();
 const router = express.Router();
-const { register, login, editUser, forgotPassword, resetPassword } = require('../controllers/auth_controller.js');
+const { register, login, editUser, forgotPassword, resetPassword } = require('../controllers/authController.js');
 const authorization = require('../middelewares/authorization.js');
 
 // Register user

@@ -1,35 +1,33 @@
-require('dotenv').config();
+require("dotenv").config();
+
 const PORT = process.env.PORT;
-const express = require('express');
+const express = require("express");
 const app = express();
-const cors = require('cors');
-const db = require('./database/db.js');
-const routes = require('./routes/routes.js');
-const auth = require('./routes/auth_router.js');
-const dashboard_router = require('./routes/dashboard_router.js');
-const tasks_router = require('./routes/tasks_router.js');
+const cors = require("cors");
 
+const db = require("./database/db.js");
+const routes = require("./routes/routes.js");
+const authRouter = require("./routes/authrouter.js");
+const dashboardRouter = require("./routes/dashboardrouter.js");
+const tasksRouter = require("./routes/tasksrouter.js");
 
-// Parsing json data
-app.use(express.json()); 
+// Parse JSON data
+app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 app.use(cors());
-// app.use('/api', dashboard_router);
 
-// Register and login routes 
-app.use('/api/auth', auth);
+// Auth routes (register & login)
+app.use("/api/auth", authRouter);
 
-// Dashboard route
-app.use('/api', dashboard_router);
+// Dashboard routes
+app.use("/api", dashboardRouter);
 
-// Tasks route
-app.use('/api/tasks', tasks_router);
-
+// Tasks routes
+app.use("/api/tasks", tasksRouter);
 
 db();
+
 app.listen(PORT, () => {
-    console.log(`Server is running at ${PORT}...`);
+  console.log(`Server is running at ${PORT}...`);
 });
-
-

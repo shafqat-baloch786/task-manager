@@ -1,6 +1,6 @@
 import { useDispatch } from "react-redux";
-import { clear_task_error } from "../../store/slices/task_slice";
-import { TaskCard } from "../task_card";
+import { clear_task_error } from "../../store/slices/taskSlice";
+import { TaskCard } from "../taskcard";
 import { ClipboardList } from "lucide-react";
 
 const DashboardView = ({ is_loading, filteredTasks, setShowModal, selectedTasks, setSelectedTasks, openEditModal, activeTaskId, setActiveTaskId }) => {
