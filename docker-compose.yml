@@ -1,32 +1,28 @@
 services:
   backend:
     build:
-      context: .                      # root context
-      dockerfile: ./backend/Dockerfile
+      context: ./backend
+      dockerfile: Dockerfile
     container_name: task-manager-backend
     ports:
       - "4000:4000"
+    env_file:
+      - ./backend/.env
+    environment:
+      - NODE_ENV=development
     volumes:
       - ./backend:/usr/src/app
       - /usr/src/app/node_modules
-    env_file:
-      - ./.env
-    environment:
-      - NODE_ENV=development
-    command: npm run dev
 
   frontend:
     build:
-      context: .                      # root context
-      dockerfile: ./frontend/Dockerfile
+      context: ./frontend
+      dockerfile: Dockerfile
     container_name: task-manager-frontend
     ports:
       - "5173:5173"
+    environment:
+      - NODE_ENV=development
     volumes:
       - ./frontend:/usr/src/app
       - /usr/src/app/node_modules
-    env_file:
-      - ./.env
-    environment:
-      - NODE_ENV=development
-    command: npm run dev
