@@ -1,4 +1,4 @@
-import api_client from './api_client';
+import api_client from './apiClient';
 
 const task_service = {
   get_tasks: () => api_client.get('/tasks'),

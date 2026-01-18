@@ -1,6 +1,9 @@
 import { Trash2, Pencil, CheckCircle2, AlertCircle, Clock, CircleDashed } from 'lucide-react';
 import { useDispatch } from 'react-redux';
-import { remove_task, toggle_task } from '../store/slices/task_slice';
+
+import { clearTaskError } from "../store/slices/taskSlice";
+
+
 
 const priorityColors = {
   high: 'bg-red-100 text-red-700',

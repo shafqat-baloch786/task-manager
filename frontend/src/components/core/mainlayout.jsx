@@ -1,5 +1,6 @@
 import { Outlet } from 'react-router-dom'
-import { LayoutSidebar } from './layout_sidebar'
+import { LayoutSidebar } from "./layoutSidebar";
+
 
 function MainLayout() {
   return (
